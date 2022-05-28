@@ -2,13 +2,13 @@
 rabbit - GitHub repository backup tool
 
 Usage:
-  rabbit [-hvp] [--token PAT] [PATTERN ...]
+  rabbit [-plh] [-t PAT] [PATTERN ...]
 
 Options:
+  -p, --prefix       Prefix to clone all repositories into
+  -l, --list         List all expanded patterns without cloning
+  -t, --token PAT    Personal access token to use
   -h, --help         Show help and usage information
-  -v, --version      Show program version
-  -p, --print        Print all expanded patterns without cloning
-  -T, --token PAT    Personal access token to use
 
 """
 from docopt import docopt
@@ -18,6 +18,7 @@ from github.PaginatedList import PaginatedList
 from github.Repository import Repository
 
 from fnmatch import fnmatch
+import sys
 from typing import List, Optional
 
 
@@ -67,18 +68,22 @@ class Pattern:
 
 
 if __name__ == "__main__":
+    # Set help flag if no arguments are provided
+    if len(sys.argv) == 1:
+        sys.argv.append("-h")
     args = docopt(__doc__)  # pyright: ignore
 
-    if len(raw_patterns := args["PATTERN"]) == 0:
-        print("No targets provided")
+    if token := args["--token"] is None:
+        print("Error: No authentication token provided", file=sys.stderr)
+        sys.exit(1)
 
     client = Github(args["--token"])
-    patterns = [Pattern(rp) for rp in raw_patterns]
+    patterns = [Pattern(rp) for rp in args["PATTERN"]]
 
     repos: List[Repository] = []
     for p in patterns:
         repos += p.expand(client)
 
-    if args["--print"]:
+    if args["--list"]:
         for r in repos:
             print(r.ssh_url)
