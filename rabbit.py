@@ -2,13 +2,13 @@
 rabbit - GitHub repository backup tool
 
 Usage:
-  rabbit [-plh] [-t PAT] [PATTERN ...]
+  rabbit [-lh] [-p PREFIX] [-t TOKEN] [PATTERN ...]
 
 Options:
-  -p, --prefix       Prefix to clone all repositories into
-  -l, --list         List all expanded patterns without cloning
-  -t, --token PAT    Personal access token to use
-  -h, --help         Show help and usage information
+  -p, --prefix PREFIX    Prefix to clone all repositories into
+  -l, --list             List all expanded patterns without cloning
+  -t, --token TOKEN      Personal access token to use
+  -h, --help             Show help and usage information
 
 """
 from docopt import docopt
@@ -18,6 +18,7 @@ from github.PaginatedList import PaginatedList
 from github.Repository import Repository
 
 from fnmatch import fnmatch
+import subprocess
 import sys
 from typing import List, Optional
 
@@ -73,17 +74,27 @@ if __name__ == "__main__":
         sys.argv.append("-h")
     args = docopt(__doc__)  # pyright: ignore
 
-    if token := args["--token"] is None:
+    if (token := args["--token"]) is None:
         print("Error: No authentication token provided", file=sys.stderr)
         sys.exit(1)
 
-    client = Github(args["--token"])
-    patterns = [Pattern(rp) for rp in args["PATTERN"]]
+    client = Github(token)
 
+    # Expand all patterns and collect a list of repositories
     repos: List[Repository] = []
+    patterns = [Pattern(rp) for rp in args["PATTERN"]]
     for p in patterns:
         repos += p.expand(client)
 
+    # List the matched repositories and exit, if requested
     if args["--list"]:
         for r in repos:
             print(r.ssh_url)
+
+        sys.exit(0)
+
+    prefix = args["--prefix"]
+
+    for r in repos:
+        dest = prefix + "/" + r.full_name if prefix else r.full_name
+        subprocess.run(["git", "clone", r.ssh_url, dest])
