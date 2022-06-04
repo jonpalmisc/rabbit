@@ -23,20 +23,34 @@ import sys
 from typing import List, Optional
 
 
-def get_entity_repos(client: Github, name: str) -> Optional[PaginatedList]:
+# Cached repositories for the authenticated user
+AU_REPO_CACHE: List[Repository] = []
+AU_REPO_CACHE_INITIALIZED = False
+
+
+def get_auth_user_repos(client: Github) -> List[Repository]:
+    """
+    Get the authenticated user's repos; caches repos for speed.
+    """
+
+    global AU_REPO_CACHE, AU_REPO_CACHE_INITIALIZED
+
+    if not AU_REPO_CACHE_INITIALIZED:
+        au = client.get_user()
+        AU_REPO_CACHE = list(au.get_repos())
+        AU_REPO_CACHE_INITIALIZED = True
+
+    return AU_REPO_CACHE
+
+
+def get_entity_repos(client: Github, name: str) -> Optional[List[Repository]]:
     """
     Get all of the repositories belonging to a user or organization.
     """
 
     try:
-        org = client.get_organization(name)
-        return org.get_repos("all")
-    except:
-        pass
-
-    try:
-        user = client.get_user(name)
-        return user.get_repos("all")
+        ent = client.get_user(name)
+        return list(ent.get_repos("all"))
     except:
         return None
 
@@ -65,7 +79,17 @@ class Pattern:
         if (repos := get_entity_repos(client, self.org)) is None:
             return []
 
-        return [r for r in repos if fnmatch(r.name, self.query)]
+        # Add the authenticated user's repos, which may include private repos
+        # belonging to the target entity not returned by `get_entity_repos`,
+        # then remove any duplicates.
+        repos += get_auth_user_repos(client)
+        repos = set(repos)
+
+        return [
+            r
+            for r in repos
+            if (fnmatch(r.name, self.query) and r.owner.login == self.org)
+        ]
 
 
 if __name__ == "__main__":
