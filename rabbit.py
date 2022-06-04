@@ -2,10 +2,11 @@
 rabbit - GitHub repository backup tool
 
 Usage:
-  rabbit [-lh] [-p PREFIX] [-t TOKEN] [PATTERN ...]
+  rabbit [-ldh] [-p PREFIX] [-t TOKEN] [PATTERN ...]
 
 Options:
   -p, --prefix PREFIX    Prefix to clone all repositories into
+  -d, --date-prefix      Append the date to the prefix
   -l, --list             List all expanded patterns without cloning
   -t, --token TOKEN      Personal access token to use
   -h, --help             Show help and usage information
@@ -14,9 +15,9 @@ Options:
 from docopt import docopt
 
 from github import Github
-from github.PaginatedList import PaginatedList
 from github.Repository import Repository
 
+from datetime import datetime
 from fnmatch import fnmatch
 import subprocess
 import sys
@@ -118,6 +119,8 @@ if __name__ == "__main__":
         sys.exit(0)
 
     prefix = args["--prefix"]
+    if args["--date-prefix"]:
+        prefix += "-" + datetime.now().isoformat()[:10]
 
     for r in repos:
         dest = prefix + "/" + r.full_name if prefix else r.full_name
