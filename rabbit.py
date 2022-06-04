@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 rabbit - GitHub repository backup tool
 
@@ -6,7 +8,7 @@ Usage:
 
 Options:
   -p, --prefix PREFIX    Prefix to clone all repositories into
-  -d, --date-prefix      Append the date to the prefix
+  -d, --date-suffix      Append the date to the prefix
   -l, --list             List all expanded patterns without cloning
   -t, --token TOKEN      Personal access token to use
   -h, --help             Show help and usage information
@@ -119,7 +121,7 @@ if __name__ == "__main__":
         sys.exit(0)
 
     prefix = args["--prefix"]
-    if args["--date-prefix"]:
+    if args["--date-suffix"]:
         prefix += "-" + datetime.now().isoformat()[:10]
 
     for r in repos:
