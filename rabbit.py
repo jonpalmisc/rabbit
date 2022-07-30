@@ -12,8 +12,8 @@ Options:
   -l, --list             List all expanded patterns without cloning
   -t, --token TOKEN      Personal access token to use
   -h, --help             Show help and usage information
-
 """
+
 from docopt import docopt
 
 from github import Github
